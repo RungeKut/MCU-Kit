@@ -29,6 +29,15 @@ parameter`, а сам сеанс код 1, даже подключившись �
 доступному зонду — knowledge/30_ГРАБЛИ/30-07. Успех проверяется по
 наличию `Device ID` в выводе, а не по коду возврата и не по одному
 отсутствию строк `Error`.
+
+**connect по умолчанию сбрасывает ядро.** `mode=NORMAL` (умолчание CLI) на
+самом деле не «тихое подключение», а сброс перед присоединением
+(`reset=SWrst` — тоже умолчание) — растущий в ОЗУ счётчик обнуляется на
+каждом новом подключении. Для чтения, которое не должно тревожить
+работающий код, — `mode="HOTPLUG"`; поэтому `info`, `read32`, `watch` и
+`save` подключаются им по умолчанию. `flash()` и `reset_run()` оставлены
+на обычном режиме нарочно: им сброс и нужен. Подробности и как найдено —
+knowledge/30_ГРАБЛИ/30-08.
 """
 import os
 import re
@@ -176,8 +185,11 @@ def probe(timeout=20):
     }
 
 
-def info(serial=None, freq=None, mode=None, iface="SWD", timeout=30):
+def info(serial=None, freq=None, mode="HOTPLUG", iface="SWD", timeout=30):
     """Подключиться к ядру по SWD и прочитать его данные. Ничего не пишет.
+
+    mode по умолчанию — HOTPLUG: обычный connect (mode=NORMAL) сам
+    сбрасывает ядро (30-08), а info() обязана быть безобидной.
 
     Возвращает {"ok", "voltage", "device_id", "device_name", "flash_size",
     "cpu", "result"}; ok — есть строка Device ID.
@@ -196,8 +208,11 @@ def info(serial=None, freq=None, mode=None, iface="SWD", timeout=30):
     }
 
 
-def read32(addr, count=1, serial=None, freq=None, mode=None, iface="SWD"):
-    """Прочитать count слов по 32 бита. Ядро не останавливается."""
+def read32(addr, count=1, serial=None, freq=None, mode="HOTPLUG",
+           iface="SWD"):
+    """Прочитать count слов по 32 бита. mode=HOTPLUG — ядро не сбрасывается
+    и не останавливается (30-08); обычный connect (mode=NORMAL) сбросил бы
+    его на каждом вызове."""
     args = _connect_args(serial, freq, mode, iface) + \
         ["-r32", "0x%08X" % addr, str(count * 4)]
     r = run(args, kind="read")
@@ -213,13 +228,15 @@ def read32(addr, count=1, serial=None, freq=None, mode=None, iface="SWD"):
 
 
 def watch(addr, times=3, interval_ms=1000, serial=None, freq=None,
-          mode=None, iface="SWD"):
+          mode="HOTPLUG", iface="SWD"):
     """Прочитать слово times раз — доказательство, что код идёт.
 
     В отличие от J-Link (один сеанс со sleep внутри, 20-02),
     STM32_Programmer_CLI не умеет пакет команд с паузой: каждое чтение —
     отдельный запуск CLI, интервал приблизителен (не проверено на
-    точность).
+    точность). mode=HOTPLUG обязателен по умолчанию — иначе каждое
+    подключение сбрасывает счётчик в ноль и watch() лжёт об успехе
+    (30-08, воспроизведено экспериментом).
     """
     vals = []
     for i in range(times):
@@ -229,12 +246,12 @@ def watch(addr, times=3, interval_ms=1000, serial=None, freq=None,
     return vals
 
 
-def save(path, addr, size, serial=None, freq=None, mode=None, iface="SWD",
-         timeout=600):
+def save(path, addr, size, serial=None, freq=None, mode="HOTPLUG",
+         iface="SWD", timeout=600):
     """Сохранить область памяти в файл (upload).
 
-    Ядро не останавливается — upload не требует halt (проверено
-    экспериментом 25.09.2026, knowledge/40_СРЕДА/40-03).
+    mode=HOTPLUG по умолчанию — иначе connect сбросит работающее ядро
+    перед чтением (30-08). Upload сам по себе halt не требует.
     """
     job = env.new_job_dir("save")
     dst = os.path.join(job, "dump.bin")
@@ -252,12 +269,10 @@ def save(path, addr, size, serial=None, freq=None, mode=None, iface="SWD",
 def reset_run(serial=None, freq=None, mode=None, iface="SWD"):
     """Сбросить и запустить.
 
-    НЕ ПРОВЕРЕНО на реальном железе: синтаксис (`-rst`) взят из --help
-    STM32CubeProgrammer 2.4.0, действием не обкатан — на подключённой
-    во время разработки плате сброс намеренно не запускался, чтобы не
-    прерывать её работу без согласия человека. Перед тем как полагаться,
-    прогнать на безопасной плате и перенести результат в
-    knowledge/40_СРЕДА/40-03 (00_ПРАВИЛА.md, правило 6).
+    `mode` по умолчанию — обычный connect (не HOTPLUG): здесь сброс и
+    есть цель. Проверено экспериментом 25.09.2026 как часть `flash()`
+    (тот же `-rst`) — вывод CLI дал `MCU Reset` / `Software reset is
+    performed` (knowledge/40_СРЕДА/40-03).
     """
     args = _connect_args(serial, freq, mode, iface) + ["-rst"]
     return run(args, kind="reset").check()
@@ -270,14 +285,18 @@ def flash(image, addr=0x08000000, verify=True, start=True, min_voltage=3.0,
     image — .bin (пишется с addr) или .hex/.elf/.srec (адреса внутри).
     Перед записью проверяет ответ ядра и напряжение через info().
 
-    НЕ ПРОВЕРЕНО записью на реальном железе: команда (`-d`/`-v`/`-rst`) и
-    строки успеха взяты из --help STM32CubeProgrammer 2.4.0, а не из
-    удачной записи — на подключённой во время разработки плате запись
-    намеренно не запускалась (риск для чужой рабочей прошивки без
-    согласия человека). Перед первым использованием — тестовая запись на
-    безопасной плате с сохранением прежнего содержимого (`save()`) и
-    перенос результата в knowledge/40_СРЕДА/40-03, статус с `не
-    проверено` на `проверено` (00_ПРАВИЛА.md, правило 6).
+    Проверено экспериментом 25.09.2026: тестовый образ (148 байт, без
+    обращения к периферии) записан и сверен на плате со STM32L07x после
+    предварительного save() всего флеша, затем тем же flash() записан
+    обратно сохранённый дамп — второе чтение совпало с бэкапом байт в
+    байт (knowledge/40_СРЕДА/40-03). `image` приводится к абсолютному
+    пути: run() выполняет CLI с cwd задания, и относительный путь до
+    этой правки не находился (тоже 40-03).
+
+    `mode` по умолчанию — обычный connect (не HOTPLUG унаследованных
+    read-функций): info() внутри тоже подключится в обычном режиме и
+    может сбросить ядро ещё до записи — здесь это не лишний риск: запись
+    и так сбрасывает и переписывает всё.
     """
     i = info(serial, freq, mode, iface)
     if not i["ok"]:
@@ -285,6 +304,7 @@ def flash(image, addr=0x08000000, verify=True, start=True, min_voltage=3.0,
     if i["voltage"] is not None and i["voltage"] < min_voltage:
         raise NoTarget("напряжение %.2f В ниже %.2f В"
                        % (i["voltage"], min_voltage))
+    image = os.path.abspath(image)
     ext = os.path.splitext(image)[1].lower()
     args = _connect_args(serial, freq, mode, iface) + ["-d", image]
     if ext == ".bin":
