@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Окружение: где стоят J-Link, компилятор и make, где работать.
+"""Окружение: где стоят J-Link, ST-Link/STM32CubeProgrammer, компилятор и
+make, где работать.
 
 Все пути ищутся, а не зашиваются: набор ходит по машинам с разными
 установками. Порядок поиска:
 
-    J-Link   MCUKIT_JLINK -> C:\\Program Files\\SEGGER\\JLink* (свежая версия)
+    J-Link   MCUKIT_JLINK  -> C:\\Program Files\\SEGGER\\JLink* (свежая версия)
+    ST-Link  MCUKIT_STLINK -> STM32CubeProgrammer отдельно -> внутри
+                            STM32CubeIDE (плагин cubeprogrammer)
     GCC      MCUKIT_GCC   -> arm-none-eabi-gcc в PATH -> Arm GNU Toolchain
                           -> GCC из STM32CubeIDE
     make     MCUKIT_MAKE  -> make в PATH -> make из STM32CubeIDE
@@ -75,6 +78,40 @@ def jlink_version():
     """Версия ПО J-Link по имени папки, например 'V938a'."""
     m = re.search(r"JLink_?(V[\w.]+)", jlink_dir(), re.I)
     return m.group(1) if m else os.path.basename(jlink_dir())
+
+
+# ---------------------------------------------------------------------------
+# ST-Link / STM32CubeProgrammer
+# ---------------------------------------------------------------------------
+
+def stlink_cli():
+    """Полный путь к STM32_Programmer_CLI.exe (STM32CubeProgrammer)."""
+    v = os.environ.get("MCUKIT_STLINK")
+    if v and os.path.exists(v):
+        return v
+    cands = []
+    for pf in _pf():
+        cands += glob.glob(os.path.join(
+            pf, "STMicroelectronics", "STM32Cube", "STM32CubeProgrammer",
+            "bin", "STM32_Programmer_CLI.exe"))
+    cands += sorted(glob.glob(
+        r"C:\ST\STM32CubeIDE_*\STM32CubeIDE\plugins"
+        r"\*cubeprogrammer*\tools\bin\STM32_Programmer_CLI.exe"),
+        key=_ver_key, reverse=True)
+    for c in cands:
+        if os.path.exists(c):
+            return c
+    raise RuntimeError("STM32CubeProgrammer не найден. Установите его "
+                       "отдельно или через STM32CubeIDE, либо задайте "
+                       "MCUKIT_STLINK — путь к STM32_Programmer_CLI.exe.")
+
+
+def stlink_version():
+    """Версия STM32CubeProgrammer, например '2.4.0'."""
+    out = subprocess.run([stlink_cli(), "-version"], capture_output=True,
+                         timeout=30).stdout.decode("utf-8", "replace")
+    m = re.search(r"version:\s*([\d.]+)", out, re.I)
+    return m.group(1) if m else out.strip()
 
 
 # ---------------------------------------------------------------------------
