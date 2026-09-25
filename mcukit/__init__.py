@@ -25,7 +25,7 @@ from .env import (gcc_bin, gcc_tool, gcc_version, is_safe_path, jlink_dir,
                   jlink_exe, jlink_version, kit_root, make_exe, utf8_console,
                   work_root)
 from .jlink import (GENERIC_CORE, JLinkError, NoTarget, Result, flash, info,
-                    probe, read32, reset_run, run, save, watch)
+                    probe, read32, reset_run, run, sample, save, watch)
 from .build import BuildError, BuildResult, build, size, symbol, vectors
 
 __all__ = [
@@ -35,7 +35,7 @@ __all__ = [
     "kit_root",
     # J-Link
     "GENERIC_CORE", "run", "Result", "JLinkError", "NoTarget", "probe",
-    "info", "read32", "watch", "save", "reset_run", "flash",
+    "info", "read32", "watch", "sample", "save", "reset_run", "flash",
     # сборка
     "build", "BuildResult", "BuildError", "size", "symbol", "vectors",
 ]

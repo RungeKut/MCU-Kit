@@ -52,7 +52,7 @@ git push
 
 ## Железо: что можно без спроса, а что нет
 
-* **Без спроса**: `probe()`, `info()`, `read32()`, `watch()` — только
+* **Без спроса**: `probe()`, `info()`, `read32()`, `watch()`, `sample()` — только
   чтение. `save()` — чтение со стопом ядра на время чтения.
 * **Только с согласия человека**: `flash()` и всё, что пишет во флеш или
   в байты настройки; снятие защиты (стирает весь флеш). Перед первой
@@ -133,7 +133,7 @@ mk.watch(mk.symbol(r.elf, "blink_count"))    # 6. растёт — код идё
 | Модуль | Что в нём |
 |---|---|
 | `env` | J-Link, GCC, make — поиск; рабочие папки; `utf8_console` |
-| `jlink` | `run`, `Result`, `probe`, `info`, `read32`, `watch`, `save`, `reset_run`, `flash` |
+| `jlink` | `run`, `Result`, `probe`, `info`, `read32`, `watch`, `sample`, `save`, `reset_run`, `flash` |
 | `build` | `build`, `BuildResult`, `size`, `symbol`, `vectors` |
 
 ## Обновление набора по ходу работы

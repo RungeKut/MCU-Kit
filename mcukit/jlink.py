@@ -261,6 +261,26 @@ def watch(addr, times=3, interval_ms=1000, device=GENERIC_CORE, serial=None):
     return [vals[0] for _a, vals in r.mem()]
 
 
+def sample(addr, count=100, interval_ms=50, device=GENERIC_CORE,
+           serial=None):
+    """Прочитать слово count раз с шагом interval_ms за ОДИН сеанс J-Link.
+
+    Для «живых» сигналов: регистр входов порта (GPIOx_IDR/ISTAT, смещение
+    0x10), пока человек жмёт кнопку или крутит энкодер. Отдельный сеанс на
+    каждое чтение стоит ~0,1 с на запуск J-Link; здесь 300 отсчётов по
+    40 мс заняли ~15 с (knowledge/20_ПРИЁМЫ/20-03). Ядро не
+    останавливается. Возвращает список значений.
+    """
+    cmds = ["connect"]
+    for i in range(count):
+        cmds.append("mem32 0x%08X 1" % addr)
+        if i + 1 < count:
+            cmds.append("sleep %d" % interval_ms)
+    r = run(cmds, device=device, serial=serial, kind="sample",
+            timeout=30 + count * (interval_ms + 20) / 1000).check()
+    return [vals[0] for _a, vals in r.mem()]
+
+
 def save(path, addr, size, device=GENERIC_CORE, serial=None, timeout=600):
     """Сохранить область памяти в файл (savebin).
 
