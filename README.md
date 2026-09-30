@@ -71,6 +71,12 @@ powershell -ExecutionPolicy Bypass -File tools\setup.ps1
 Либо двойной щелчок по `Install-skill.bat`. После установки —
 **перезапустить Claude Code / Kimi Code**.
 
+Перезапуск нужен один раз — чтобы агент зарегистрировал скилл. Дальше
+обновления набора (`git pull`) перезапуска не требуют: база знаний,
+библиотека и тело SKILL.md читаются с диска в момент использования.
+Перезапуск (в Kimi Code можно попробовать `/reload`) понадобится, только
+если поменялся frontmatter SKILL.md — имя или description с триггерами.
+
 Нужны: SEGGER J-Link Software и/или STM32CubeProgrammer (можно только
 что-то одно — набор находит то, что есть), arm-none-eabi-gcc и make
 (подойдут и те, что внутри STM32CubeIDE, — набор найдёт их сам, вместе с
