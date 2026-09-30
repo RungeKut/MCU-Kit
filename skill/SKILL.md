@@ -6,8 +6,8 @@ description: Микроконтроллеры Cortex-M (GD32, STM32) скрип�
 # Микроконтроллеры: сборка и прошивка скриптами
 
 Набор — git-репозиторий, общий для нескольких машин. Корень находится так:
-переменная `MCUKIT_HOME`, иначе `~/.claude/skills/mcu` — junction,
-ведущий в `<корень>/skill`.
+переменная `MCUKIT_HOME`, иначе junction `~/.claude/skills/mcu` (Claude
+Code) или `~/.kimi-code/skills/mcu` (Kimi Code) — ведут в `<корень>/skill`.
 
 ## ОБЯЗАТЕЛЬНО: синхронизация репозитория
 

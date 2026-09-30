@@ -5,6 +5,13 @@
 
 ---
 
+## 2026-09-30 — подключение к Kimi Code
+
+* `tools/setup.ps1` создаёт junction скилла не только в Claude Code
+  (`~/.claude/skills/mcu`), но и в Kimi Code (`~/.kimi-code/skills/mcu`).
+  Frontmatter SKILL.md (name + description) совместим с обоими агентами
+  без изменений; тексты поправлены там, где упоминался только Claude Code.
+
 ## 2026-09-26 — ST-Link без сайта ST: драйвер и OpenOCD
 
 Записи базы, добытые на машине, где `st.com` недоступен, а зонд

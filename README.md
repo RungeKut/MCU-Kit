@@ -3,7 +3,8 @@
 Инструмент для сборки и прошивки микроконтроллеров Cortex-M скриптами:
 библиотека на Python поверх SEGGER J-Link Commander (или ST-Link через
 STM32CubeProgrammer) и arm-none-eabi-gcc, база проверенного знания и
-правила её ведения. Подключается к Claude Code как скилл `/mcu`.
+правила её ведения. Подключается к Claude Code как скилл `/mcu` и к
+Kimi Code как `/skill:mcu`.
 
 Соседние наборы с теми же правилами ведения:
 [Allegro-Kit](https://github.com/RungeKut/Allegro-Kit) (платы и схемы
@@ -68,7 +69,7 @@ powershell -ExecutionPolicy Bypass -File tools\setup.ps1
 ```
 
 Либо двойной щелчок по `Install-skill.bat`. После установки —
-**перезапустить Claude Code**.
+**перезапустить Claude Code / Kimi Code**.
 
 Нужны: SEGGER J-Link Software и/или STM32CubeProgrammer (можно только
 что-то одно — набор находит то, что есть), arm-none-eabi-gcc и make
@@ -107,8 +108,9 @@ print(mk.stlink.info())                          # ID, флеш, напряже�
 /mcu подключись к плате через ST-Link, проверь связь и прошей blink
 ```
 
-Без команды набор подключается сам, когда в запросе есть J-Link, ST-Link,
-STM32CubeProgrammer, SWD, прошивка, GD32, STM32, Cortex-M,
+В Kimi Code то же самое — `/skill:mcu ...`. Без команды набор подключается
+сам, когда в запросе есть J-Link, ST-Link, STM32CubeProgrammer, SWD,
+прошивка, GD32, STM32, Cortex-M,
 arm-none-eabi-gcc — или ошибки вида «Could not connect to the target
 device», «Device will be unsecured now».
 
